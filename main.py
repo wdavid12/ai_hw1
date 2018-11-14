@@ -89,7 +89,9 @@ def map_problem():
     # Ex.11
     # TODO: create an instance of `AStar` with the `AirDistHeuristic`,
     #       solve the same `map_prob` with it and print the results (as before).
-    exit()  # TODO: remove!
+    a_star = AStar(AirDistHeuristic)
+    res = a_star.solve_problem(map_prob)
+    print(res)
 
     # Ex.12
     # TODO:
