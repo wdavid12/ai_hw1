@@ -47,7 +47,11 @@ class AStar(BestFirstSearch):
         Notice: You may use `search_node.cost`, `self.heuristic_weight`, and `self.heuristic_function`.
         """
 
-        raise NotImplemented()  # TODO: remove!
+        heuristic = self.heuristic_function.estimate(search_node.state)
+        cost = search_node.cost
+
+        return self.heuristic_weight*heuristic + (1-self.heuristic_weight)*cost
+
 
     def _open_successor_node(self, problem: GraphProblem, successor_node: SearchNode):
         """
@@ -56,16 +60,18 @@ class AStar(BestFirstSearch):
         This method is responsible for adding this just-created successor
          node into the `self.open` priority queue, and may check the existence
          of another node representing the same state in `self.close`.
-
-        TODO: implement this method.
-        Have a look at the implementation of `BestFirstSearch` to have better understanding.
-        Use `self.open` (SearchNodesPriorityQueue) and `self.close` (SearchNodesCollection) data structures.
-        These data structures are implemented in `graph_search/best_first_search.py`.
-        Note: The successor_node's f-score has been already calculated and stored
-              under `successor_node.expanding_priority`.
-        Remember: In A*, in contrast to uniform-cost, a successor state might have an already closed node,
-                  but still could be improved.
         """
 
-        raise NotImplemented()  # TODO: remove!
+        if self.open.has_state(successor_node.state):
+            existing_node = self.open.get_node_by_state(successor_node.state)
+            if existing_node.expanding_priority > successor_node.expanding_priority:
+                self.open.extract_node(existing_node)
+                self.open.push_node(successor_node)
+        elif self.close.has_state(successor_node.state):
+            existing_node = self.close.get_node_by_state(successor_node.state)
+            if existing_node.expanding_priority > successor_node.expanding_priority:
+                self.close.remove_node(existing_node)
+                self.open.push_node(successor_node)
+        else:
+            self.open.push_node(successor_node)
 
