@@ -39,7 +39,9 @@ class RelaxedDeliveriesState(GraphProblemState):
         TODO: implement this method!
         Notice: Never compare floats using `==` operator! Use `fuel_as_int` instead of `fuel`.
         """
-        raise NotImplemented()  # TODO: remove!
+        fuel_equal = self.fuel_as_int == other.fuel_as_int
+        sets_equal = self.dropped_so_far == other.dropped_so_far
+        return self.current_location == other.current_location and fuel_equal and sets_equal
 
     def __hash__(self):
         """
@@ -53,7 +55,7 @@ class RelaxedDeliveriesState(GraphProblemState):
                 Otherwise the upper requirement would not met.
                 In our case, use `fuel_as_int`.
         """
-        raise NotImplemented()  # TODO: remove!
+        return hash((self.current_location, self.fuel_as_int, self.dropped_so_far))
 
     def __str__(self):
         """
@@ -93,7 +95,21 @@ class RelaxedDeliveriesProblem(GraphProblem):
         """
         assert isinstance(state_to_expand, RelaxedDeliveriesState)
 
-        raise NotImplemented()  # TODO: remove!
+        remaining = self.drop_points - state_to_expand.dropped_so_far
+
+        for junction in remaining:
+            distance = state_to_expand.current_location.calc_air_distance_from(junction)
+            if state_to_expand.fuel < distance:
+                continue
+            remaining_fuel = state_to_expand.fuel - distance
+            new_dropped_so_far = state_to_expand.dropped_so_far | frozenset([junction])
+            yield RelaxedDeliveriesState(junction, new_dropped_so_far, remaining_fuel), distance
+
+        for station in self.gas_stations:
+            distance = state_to_expand.current_location.calc_air_distance_from(station)
+            if state_to_expand.fuel < distance:
+                continue
+            yield RelaxedDeliveriesState(station, state_to_expand.dropped_so_far, self.gas_tank_capacity), distance
 
     def is_goal(self, state: GraphProblemState) -> bool:
         """
@@ -101,8 +117,8 @@ class RelaxedDeliveriesProblem(GraphProblem):
         TODO: implement this method!
         """
         assert isinstance(state, RelaxedDeliveriesState)
+        return len(state.dropped_so_far) == len(self.drop_points)
 
-        raise NotImplemented()  # TODO: remove!
 
     def solution_additional_str(self, result: 'SearchResult') -> str:
         """This method is used to enhance the printing method of a found solution."""
