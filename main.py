@@ -166,7 +166,7 @@ def relaxed_deliveries_problem():
     #    (x-axis). Of course that the costs of A*, and deterministic
     #    greedy are not dependent with the iteration number, so
     #    these two should be represented by horizontal lines.
-    stoch_solver = GreedyStochastic(AirDistHeuristic)
+    stoch_solver = GreedyStochastic(MSTAirDistHeuristic)
     print(stoch_solver.solve_problem(big_deliveries_prob))
 
 

@@ -6,17 +6,10 @@ import math
 X = np.array([400, 450, 900, 390, 550])
 
 def calc_probs(x_vector, temp):
-    res = np.zeros(len(x_vector))
-    alpha = min(x_vector)
-    for i,x in enumerate(x_vector):
-        prob = math.pow((x/alpha), -1/temp)
-        res[i] = prob
-
-    sigma = sum(res)
-    for i in range(len(x_vector)):
-        res[i] = res[i] / sigma
-
-    return res
+    alpha = np.min(x_vector)
+    res = np.power(x_vector/alpha, -1 / temp)
+    sigma = np.sum(res)
+    return res / sigma
 
 
 T = np.linspace(0.01,5,100)
