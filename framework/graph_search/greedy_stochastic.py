@@ -25,7 +25,16 @@ class GreedyStochastic(BestFirstSearch):
         TODO: implement this method!
         """
 
-        raise NotImplemented()  # TODO: remove!
+        if self.close.has_state(successor_node.state):
+            return
+
+        if self.open.has_state(successor_node.state):
+            already_found_node_with_same_state = self.open.get_node_by_state(successor_node.state)
+            if already_found_node_with_same_state.expanding_priority > successor_node.expanding_priority:
+                self.open.extract_node(already_found_node_with_same_state)
+
+        if not self.open.has_state(successor_node.state):
+            self.open.push_node(successor_node)
 
     def _calc_node_expanding_priority(self, search_node: SearchNode) -> float:
         """
@@ -33,7 +42,20 @@ class GreedyStochastic(BestFirstSearch):
         Remember: `GreedyStochastic` is greedy.
         """
 
-        raise NotImplemented()  # TODO: remove!
+        return self.heuristic_function.estimate(search_node.state)
+
+    def get_probs(self, x_vector, temp):
+        res = np.zeros(len(x_vector))
+        alpha = min(x_vector)
+        for i,x in enumerate(x_vector):
+            prob = math.pow((x/alpha), -1/temp)
+            res[i] = prob
+
+        sigma = sum(res)
+        for i in range(len(x_vector)):
+            res[i] = res[i] / sigma
+
+        return res
 
     def _extract_next_search_node_to_expand(self) -> Optional[SearchNode]:
         """
@@ -50,5 +72,23 @@ class GreedyStochastic(BestFirstSearch):
                 of these popped items. The other items have to be
                 pushed again into that queue.
         """
+        if self.open.empty():
+            return None
 
-        raise NotImplemented()  # TODO: remove!
+        nodes = []
+        for i in range(min(len(self.open), self.N)):
+            nodes.append(open.pop_next_node())
+
+        nodes = np.array(nodes)
+        probs = self.get_probs(nodes, self.T)
+
+        ret = np.random.choice(nodes, p=probs)
+
+        for node in nodes:
+            if node.state != ret.state:
+                open.push_node(node)
+
+        self.T *= self.T_scale_factor
+
+        return ret
+
