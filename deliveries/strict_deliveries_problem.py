@@ -18,7 +18,11 @@ class StrictDeliveriesState(RelaxedDeliveriesState):
         If you believe you need to modify the state for the strict
          problem in some sense, please go ahead and do so.
     """
-    pass
+    def __init__(self, current_location: Junction,
+                 dropped_so_far: Union[Set[Junction], FrozenSet[Junction]],
+                 fuel: float, problem_input: DeliveriesProblemInput ):
+        super().__init__(current_location, dropped_so_far, fuel)
+        self.problem_input = problem_input
 
 
 class StrictDeliveriesProblem(RelaxedDeliveriesProblem):
@@ -32,7 +36,8 @@ class StrictDeliveriesProblem(RelaxedDeliveriesProblem):
                  inner_problem_solver: GraphProblemSolver, use_cache: bool = True):
         super(StrictDeliveriesProblem, self).__init__(problem_input)
         self.initial_state = StrictDeliveriesState(
-            problem_input.start_point, frozenset(), problem_input.gas_tank_init_fuel)
+            problem_input.start_point, frozenset(), problem_input.gas_tank_init_fuel, problem_input)
+        self.problem_input = problem_input
         self.inner_problem_solver = inner_problem_solver
         self.roads = roads
         self.use_cache = use_cache
@@ -56,6 +61,19 @@ class StrictDeliveriesProblem(RelaxedDeliveriesProblem):
             self.nr_cache_misses += 1
         return self._cache.get(key)
 
+    def _calc_distance(self, source: Junction, dest: Junction) -> float:
+        pair = frozenset({source,dest})
+        known_distance = self._get_from_cache(pair)
+        if known_distance is not None:
+            return known_distance
+
+        problem = MapProblem(self.roads, source.index, dest.index)
+        distance = self.inner_problem_solver.solve_problem(problem).final_search_node.cost
+
+        self._insert_to_cache(pair, distance)
+
+        return distance
+
     def expand_state_with_costs(self, state_to_expand: GraphProblemState) -> Iterator[Tuple[GraphProblemState, float]]:
         """
         TODO: implement this method!
@@ -68,7 +86,22 @@ class StrictDeliveriesProblem(RelaxedDeliveriesProblem):
         """
         assert isinstance(state_to_expand, StrictDeliveriesState)
 
-        raise NotImplemented()  # TODO: remove!
+        remaining = self.drop_points - state_to_expand.dropped_so_far
+
+        for junction in remaining:
+            distance = self._calc_distance(state_to_expand.current_location, junction)
+            if state_to_expand.fuel < distance:
+                continue
+            remaining_fuel = state_to_expand.fuel - distance
+            new_dropped_so_far = state_to_expand.dropped_so_far | frozenset([junction])
+            yield StrictDeliveriesState(junction, new_dropped_so_far, remaining_fuel, self.problem_input), distance
+
+        for station in self.gas_stations:
+            distance = self._calc_distance(state_to_expand.current_location, station)
+            if state_to_expand.fuel < distance:
+                continue
+            yield StrictDeliveriesState(station, state_to_expand.dropped_so_far, self.gas_tank_capacity, self.problem_input), distance
+
 
     def is_goal(self, state: GraphProblemState) -> bool:
         """
@@ -76,5 +109,4 @@ class StrictDeliveriesProblem(RelaxedDeliveriesProblem):
         TODO: implement this method!
         """
         assert isinstance(state, StrictDeliveriesState)
-
-        raise NotImplemented()  # TODO: remove!
+        return super().is_goal(state)

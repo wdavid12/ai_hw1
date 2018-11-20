@@ -121,6 +121,35 @@ def map_problem():
 # ----------------------- Deliveries Problem -------------------------
 # --------------------------------------------------------------------
 
+def run_anytime_stochastic(num_iterations, problem):
+    x_axis = np.arange(1,num_iterations+1)
+    solutions = np.zeros(num_iterations)
+    for i in range(num_iterations):
+        solver = GreedyStochastic(MSTAirDistHeuristic)
+        solutions[i] = solver.solve_problem(problem).final_search_node.cost
+
+    anytime_costs = np.zeros(num_iterations)
+    for i in range(num_iterations):
+        anytime_costs[i] = min(solutions[:i+1])
+
+    astar1 = AStar(MSTAirDistHeuristic, 1)
+    astar2 = AStar(MSTAirDistHeuristic, 0.5)
+
+    astar1_costs = np.full(num_iterations, astar1.solve_problem(problem).final_search_node.cost)
+    astar2_costs = np.full(num_iterations, astar2.solve_problem(problem).final_search_node.cost)
+
+    plt.plot(x_axis, solutions, label='solution cost')
+    plt.plot(x_axis, anytime_costs, label='anytime cost')
+    plt.plot(x_axis, astar1_costs, label='greedy deterministic')
+    plt.plot(x_axis, astar2_costs, label='AStar')
+
+    plt.xlabel("num. of iterations")
+    plt.ylabel("solution cost")
+    plt.title("solution cost for different algorithms")
+    plt.legend()
+    plt.grid()
+    plt.show()
+
 def relaxed_deliveries_problem():
 
     print()
@@ -166,9 +195,7 @@ def relaxed_deliveries_problem():
     #    (x-axis). Of course that the costs of A*, and deterministic
     #    greedy are not dependent with the iteration number, so
     #    these two should be represented by horizontal lines.
-    stoch_solver = GreedyStochastic(MSTAirDistHeuristic)
-    print(stoch_solver.solve_problem(big_deliveries_prob))
-
+    run_anytime_stochastic(100, big_deliveries_prob)
 
 def strict_deliveries_problem():
     print()
@@ -181,12 +208,13 @@ def strict_deliveries_problem():
     # Ex.26
     # TODO: Call here the function `run_astar_for_weights_in_range()`
     #       with `MSTAirDistHeuristic` and `big_deliveries_prob`.
-    exit()  # TODO: remove!
+    run_astar_for_weights_in_range(MSTAirDistHeuristic, small_deliveries_strict_problem)
 
     # Ex.28
     # TODO: create an instance of `AStar` with the `RelaxedDeliveriesHeuristic`,
     #       solve the `small_deliveries_strict_problem` with it and print the results (as before).
-    exit()  # TODO: remove!
+    a_star = AStar(RelaxedDeliveriesHeuristic)
+    print(a_star.solve_problem(small_deliveries_strict_problem))
 
 
 def main():
