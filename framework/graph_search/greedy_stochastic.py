@@ -22,17 +22,8 @@ class GreedyStochastic(BestFirstSearch):
         self.heuristic_function = self.heuristic_function_type(problem)
 
     def _open_successor_node(self, problem: GraphProblem, successor_node: SearchNode):
-        """
-        TODO: implement this method!
-        """
-
         if self.close.has_state(successor_node.state):
             return
-
-        if self.open.has_state(successor_node.state):
-            already_found_node_with_same_state = self.open.get_node_by_state(successor_node.state)
-            if already_found_node_with_same_state.expanding_priority > successor_node.expanding_priority:
-                self.open.extract_node(already_found_node_with_same_state)
 
         if not self.open.has_state(successor_node.state):
             self.open.push_node(successor_node)
@@ -45,18 +36,31 @@ class GreedyStochastic(BestFirstSearch):
 
         return self.heuristic_function.estimate(search_node.state)
 
-    def get_probs(self, x_vector, temp):
+    def _get_probs(self, x_vector):
+        """
+        calculate probability vector based on current temperature.
+        """
         alpha = np.min(x_vector)
-        res = np.power(x_vector/alpha, -1 / temp)
+        res = np.power(x_vector/alpha, -1 / self.T)
         sigma = np.sum(res)
         return res / sigma
+
+    def _select_random_node(self, nodes):
+        """
+        return a random node based on a specific probability distribution.
+        """
+        x = np.array([node.expanding_priority for node in nodes])
+        if np.min(x) == 0.0:
+            return nodes[0] # Corner case, we have found a goal node
+        else:
+            probs = self._get_probs(x)
+            return np.random.choice(nodes, p=probs)
 
     def _extract_next_search_node_to_expand(self) -> Optional[SearchNode]:
         """
         Extracts the next node to expand from the open queue,
          using the stochastic method to choose out of the N
          best items from open.
-        TODO: implement this method!
         Use `np.random.choice(...)` whenever you need to randomly choose
          an item from an array of items given a probabilities array `p`.
         You can read the documentation of `np.random.choice(...)` and
@@ -73,17 +77,7 @@ class GreedyStochastic(BestFirstSearch):
         for i in range(min(len(self.open), self.N)):
             nodes.append(self.open.pop_next_node())
 
-        x = np.array([node.expanding_priority for node in nodes])
-
-        # This is a corner case. We have found a target node.
-        # The algorithm will stop during the current iteration.
-        # no need to reinsert the other nodes.
-        if (np.min(x) == 0.0):
-            return nodes[0]
-
-        probs = self.get_probs(x, self.T)
-
-        ret = np.random.choice(nodes, p=probs)
+        ret = self._select_random_node(nodes)
 
         for node in nodes:
             if node.state != ret.state:
@@ -91,5 +85,6 @@ class GreedyStochastic(BestFirstSearch):
 
         self.T *= self.T_scale_factor
 
+        self.close.add_node(ret)
         return ret
 
