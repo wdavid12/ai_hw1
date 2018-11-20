@@ -4,6 +4,7 @@ from .strict_deliveries_problem import StrictDeliveriesState, StrictDeliveriesPr
 from .deliveries_problem_input import DeliveriesProblemInput
 from framework.ways import *
 
+import math
 import numpy as np
 from scipy.sparse.csgraph import minimum_spanning_tree as mst
 from typing import Set, Dict, FrozenSet
@@ -100,7 +101,7 @@ class RelaxedDeliveriesHeuristic(HeuristicFunction):
         if res is not None:
             return res.cost
         else:
-            return 10**6
+            return math.inf
 
 
 
